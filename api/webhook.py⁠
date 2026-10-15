@@ -1,0 +1,183 @@
+import os
+import logging
+import random
+import asyncio
+from http.server import BaseHTTPRequestHandler
+import json
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters,
+)
+
+# ==========================================
+# 1. الإعدادات الأساسية
+# ==========================================
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "6252714666:AAHmm6U5Heecpxzt4xvETneErArsS8oZdoU")
+PROMO_CODE = "1x_5881253"
+DOWNLOAD_LINK = "https://1xbet.com"
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+# بناء التطبيق الخاص بـ telegram-bot
+telegram_app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data.clear()
+    welcome_text = (
+        "🌐 **النظام الذكي للتحليل والتشغيل - 1xBET VIP v4.8**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "مرحباً بك في البوت المعتمد لفك خوارزميات لعبة التفاحة 🍎\n\n"
+        "⚠️ **تنبيه نظام الحماية والرقابة:**\n"
+        "البوت يعمل عبر خوادم مخصصة مرتبطة بالسيرفر المباشر. يتم إيقاف الخوارزمية تلقائياً كل فترة لتفادي كشف الحسابات أو حظر السيرفر، ويُعاد تشغيله بعد تحديث الأكواد.\n\n"
+        "📌 **خطوات التفعيل والشروط الأساسية:**\n"
+        "1️⃣ قم بتحميل التطبيق الرسمي أو افتح الموقع عبر الرابط أدناه.\n"
+        "2️⃣ أنشئ **حساب جديد** (بنقرة واحدة أو عن طريق الهاتف).\n"
+        "3️⃣ ادخل البروموكود المعتمد لربط حسابك بالسيرفر:\n"
+        f"👈 البروموكود: `{PROMO_CODE}` (اضغط عليه للنسخ)\n\n"
+        "4️⃣ بعد إتمام التسجيل، اضغط على زر **\"تم التسجيل والتحقق ✅\"** لتأكيد الـ ID."
+    )
+
+    inline_keyboard = [
+        [InlineKeyboardButton("📥 تحميل تطبيق 1xbet", url=DOWNLOAD_LINK)],
+        [InlineKeyboardButton("✅ تم التسجيل والتحقق", callback_data="check_registration")]
+    ]
+    reply_markup = InlineKeyboardMarkup(inline_keyboard)
+
+    await update.message.reply_text(
+        text=welcome_text,
+        parse_mode="Markdown",
+        reply_markup=reply_markup
+    )
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "check_registration":
+        context.user_data["awaiting_id"] = True
+        request_id_text = (
+            "🔄 **جاري الاتصال بسيرفرات 1xbet...**\n\n"
+            "يرجى إرسال **ID الحساب الجديد** الخاص بك الآن في شات البوت لربطه بخوارزمية التوقع."
+        )
+        keyboard = [["توقع التفاحة 🍎🎯"]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+        await query.message.reply_text(
+            text=request_id_text,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_text = update.message.text.strip()
+
+    if user_text.isdigit():
+        account_id = user_text
+        context.user_data["account_id"] = account_id
+        context.user_data["awaiting_id"] = False
+        
+        success_text = (
+            f"✅ **تم التحقق من الحساب بنجاح!**\n"
+            f"🆔 ID: `{account_id}`\n"
+            f"🌐 المنصة: **1xbet VIP**\n"
+            f"🔑 البروموكود: `{PROMO_CODE}`\n\n"
+            "اضغط على زر **\"توقع التفاحة 🍎🎯\"** بالأسفل للحصول على التوقع."
+        )
+        keyboard = [["توقع التفاحة 🍎🎯"]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        
+        await update.message.reply_text(
+            text=success_text,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+
+    elif user_text in ["توقع التفاحة 🍎🎯", "التوقع التالي 🔄"]:
+        if "account_id" not in context.user_data:
+            await update.message.reply_text(
+                "⚠ **لم يتم ربط ID الحساب بعد!**\n"
+                "يرجى إرسال رقم الـ ID الخاص بحسابك الجديد (أرقام فقط) أولاً."
+            )
+            return
+
+        system_status = random.choice([
+            "🟢 حالة السيرفر: متصل وآمن",
+            "🟢 حالة الخوارزمية: نشطة 100%",
+            "🟡 حالة السيرفر: ضغط متوسط - نظام حماية متقبل"
+        ])
+        
+        apple_pos = random.randint(1, 5)
+        safe_rate = random.randint(93, 99)
+
+        game_response = (
+            f"🛡️ {system_status}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 **التوقع الحالي:** اختر التفاحة رقم **[{apple_pos}]** 🍎\n"
+            f"📊 **نسبة الأمان:** {safe_rate}%\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "💡 *تنبيه:* إذا واجهت حظراً أو توقفاً، فهذا يعني أن الشركة تجري فحصاً دورياً وسنعيد تشغيل البوت فوراً."
+        )
+
+        keyboard = [
+            ["التوقع التالي 🔄"],
+            ["إعادة ضبط الحساب ⚙️"]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        await update.message.reply_text(text=game_response, parse_mode="Markdown", reply_markup=reply_markup)
+
+    elif user_text == "إعادة ضبط الحساب ⚙️":
+        context.user_data.clear()
+        await update.message.reply_text(
+            "تم إغلاق الجلسة وإعادة تعيين الاتصال. اضغط /start للبدء من جديد.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+    else:
+        keyboard = [["توقع التفاحة 🍎🎯"]] if "account_id" in context.user_data else []
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True) if keyboard else None
+        await update.message.reply_text(
+            "يرجى كتابة رقم الـ ID الخاص بك (أرقام فقط) أو استخدام الأزرار في الأسفل.",
+            reply_markup=reply_markup
+        )
+
+# إضافة المعالجات للتطبيق
+telegram_app.add_handler(CommandHandler("start", start_command))
+telegram_app.add_handler(CallbackQueryHandler(button_callback))
+telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        
+        try:
+            update_data = json.loads(post_data.decode('utf-8'))
+            update = Update.de_json(update_data, telegram_app.bot)
+            
+            async def process():
+                await telegram_app.initialize()
+                await telegram_app.process_update(update)
+
+            asyncio.run(process())
+            
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write('OK'.encode('utf-8'))
+        except Exception as e:
+            logger.error(f"Error processing update: {e}")
+            self.send_response(500)
+            self.end_headers()
+
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write('Bot is running on Vercel Webhook!'.encode('utf-8'))
